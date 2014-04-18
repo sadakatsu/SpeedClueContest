@@ -1,0 +1,34 @@
+<?xml version="1.0"?>                                                                                                                                       
+<project name="Core" default="all">                                                                                                                      
+	<property name="src.dir" value="code" />
+	<property name="build.dir" value="build" />
+
+	<target name="compile" description="Compile all sources.">
+		<mkdir dir="${build.dir}" />
+		<javac srcdir="${src.dir}" destdir="${build.dir}" optimize="on" debug="on" deprecation="on" includeantruntime="no">
+			<compilerarg value="-Xlint" />
+		</javac>
+	</target>
+
+	<target name="testServer.jar" depends="compile" description="Generate testServer.jar.">
+		<jar destfile="testServer.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="clue.testserver.TestServer" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="randomPlayer.jar" depends="compile" description="Generate randomPlayer.jar.">
+		<jar destfile="randomPlayer.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="clue.randomplayer.RandomPlayer" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="all" depends="testServer.jar, randomPlayer.jar" />
+
+	<target name="clean" description="Delete all generated files.">
+		<delete dir="${build.dir}" />
+	</target>
+</project>
