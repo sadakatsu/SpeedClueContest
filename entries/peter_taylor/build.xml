@@ -1,0 +1,26 @@
+<?xml version="1.0"?>                                                                                                                                       
+<project name="PT" default="simple-jar">                                                                                                                      
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="build" />
+	<property name="dist.dir" value="dist" />
+
+	<target name="compile" description="Compile all sources.">
+		<mkdir dir="${build.dir}" />
+		<javac srcdir="${src.dir}" destdir="${build.dir}" optimize="on" debug="on" deprecation="on" includeantruntime="no">
+			<compilerarg value="-Xlint" />
+		</javac>
+	</target>
+
+	<target name="simple-jar" depends="compile" description="Generate the jar for the SimpleCluedoPlayer.">
+		<mkdir dir="${dist.dir}" />
+		<jar destfile="${dist.dir}/SimpleCluedoPlayer.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="org.cheddarmonk.cluedoai.SimpleCluedoPlayer" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="clean" description="Delete all generated files.">
+		<delete dir="${build.dir}" />
+	</target>
+</project>
