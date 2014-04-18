@@ -1,0 +1,4 @@
+cmd /c START java -jar randomPlayer.jar {A} %%
+java -jar randomPlayer.jar {B} %%
+java -jar randomPlayer.jar {C} %%
+java -jar randomPlayer.jar {D} %%
