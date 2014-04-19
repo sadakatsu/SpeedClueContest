@@ -13,20 +13,28 @@
 	<target name="testServer.jar" depends="compile" description="Generate testServer.jar.">
 		<jar destfile="testServer.jar" basedir="${build.dir}">
 			<manifest>
-				<attribute name="Main-Class" value="clue.testserver.TestServer" />
+				<attribute name="Main-Class" value="com.sadakatsu.clue.testserver.TestServer" />
 			</manifest>
 		</jar>
 	</target>
 
-	<target name="randomPlayer.jar" depends="compile" description="Generate randomPlayer.jar.">
-		<jar destfile="randomPlayer.jar" basedir="${build.dir}">
+	<target name="randomAI.jar" depends="compile" description="Generate randomAI.jar.">
+		<jar destfile="randomAI.jar" basedir="${build.dir}">
 			<manifest>
-				<attribute name="Main-Class" value="clue.randomplayer.RandomPlayer" />
+				<attribute name="Main-Class" value="com.sadakatsu.clue.ai.RandomAI" />
 			</manifest>
 		</jar>
 	</target>
-
-	<target name="all" depends="testServer.jar, randomPlayer.jar" />
+	
+	<target name="clue.jar" depends="compile" description="Build a class JAR for building new AIs">
+		<jar destfile="com.sadakatsu.clue.jar" basedir="${build.dir}" />
+	</target>
+	
+	<target name="document" description="Build JavaDocs for the com.sadakatsu.clue package.">
+		<javadoc sourcepath="${src.dir}" destdir="doc" />
+	</target>
+	
+	<target name="all" depends="testServer.jar, randomAI.jar, clue.jar, document" />
 
 	<target name="clean" description="Delete all generated files.">
 		<delete dir="${build.dir}" />

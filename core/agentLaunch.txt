@@ -1,4 +1,4 @@
-cmd /c START java -jar randomPlayer.jar {A} %%
-java -jar randomPlayer.jar {B} %%
-java -jar randomPlayer.jar {C} %%
-java -jar randomPlayer.jar {D} %%
+cmd /c START java -jar randomAI.jar {A} %% true
+java -jar randomAI.jar {B} %%
+java -jar randomAI.jar {C} %%
+java -jar randomAI.jar {D} %%
