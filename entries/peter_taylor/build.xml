@@ -1,5 +1,5 @@
-<?xml version="1.0"?>                                                                                                                                       
-<project name="PT" default="simple-jar">                                                                                                                      
+<?xml version="1.0"?>
+<project name="PT" default="player-jars">
 	<property name="src.dir" value="src" />
 	<property name="build.dir" value="build" />
 	<property name="dist.dir" value="dist" />
@@ -19,6 +19,17 @@
 			</manifest>
 		</jar>
 	</target>
+
+	<target name="inference-jar" depends="compile" description="Generate the jar for the InferencePlayer.">
+		<mkdir dir="${dist.dir}" />
+		<jar destfile="${dist.dir}/InferencePlayer.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="org.cheddarmonk.cluedoai.InferencePlayer" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="player-jars" depends="simple-jar, inference-jar" description="Generate the jars for all the players." />
 
 	<target name="clean" description="Delete all generated files.">
 		<delete dir="${build.dir}" />
