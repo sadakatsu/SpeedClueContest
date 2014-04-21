@@ -447,7 +447,8 @@ public class InferencePlayer extends AbstractCluedoPlayer {
 
 	public static void main(String[] args) throws Exception {
 		try {
-			System.setOut(new PrintStream("/tmp/speed-cluedo-player" + args[0]+".log"));
+			File logFile = new File(System.getProperty("java.io.tmpdir"), "speed-cluedo-player" + args[0]+".log");
+			System.setOut(new PrintStream(logFile));
 			new InferencePlayer(args[0], Integer.parseInt(args[1])).run();
 		} catch (Throwable th) {
 			th.printStackTrace(System.out);
