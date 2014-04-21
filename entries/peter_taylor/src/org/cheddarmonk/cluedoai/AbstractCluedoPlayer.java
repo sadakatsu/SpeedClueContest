@@ -12,6 +12,7 @@ public abstract class AbstractCluedoPlayer {
 
 	private int playerCount;
 	private int myIndex = -1;
+	private int roundNumber;
 	private int currentPlayerIndex;
 	private Set<Card> hand = Collections.emptySet();
 
@@ -135,6 +136,7 @@ public abstract class AbstractCluedoPlayer {
 		playerCount = Integer.parseInt(tokens[1]);
 		myIndex = Integer.parseInt(tokens[2]);
 		currentPlayerIndex = 0;
+		roundNumber = 0;
 
 		Set<Card> newHand = new HashSet<Card>();
 		for (int i = 3; i < tokens.length; ++i) {
@@ -169,6 +171,8 @@ public abstract class AbstractCluedoPlayer {
 	}
 
 	private void suggestion(String[] tokens) {
+		if (currentPlayerIndex == 0) roundNumber++;
+
 		int suggestingPlayerIndex = Integer.parseInt(tokens[1]);
 		Suggestion suggestion = Suggestion.parse(tokens, 2);
 		int disprovingPlayerIndex = tokens[5].equals("-") ? -1 : Integer.parseInt(tokens[5]);
@@ -200,6 +204,8 @@ public abstract class AbstractCluedoPlayer {
 		Suggestion accusation = Suggestion.parse(tokens, 2);
 		boolean correct = tokens[5].equals("+");
 		recordAccusation(accusingPlayer, accusation, correct);
+
+		if (correct) System.out.format("Player %d won on round %d\n", accusingPlayer, roundNumber);
 
 		formatResponse("ok");
 	}
@@ -336,6 +342,18 @@ public abstract class AbstractCluedoPlayer {
 				}
 			}
 			return all;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (!(obj instanceof Suggestion)) return false;
+			Suggestion other = (Suggestion)obj;
+			return this.suspect == other.suspect && this.weapon == other.weapon && this.room == other.room;
+		}
+
+		@Override
+		public int hashCode() {
+			return (suspect.hashCode() * 37 + weapon.hashCode()) * 37 + room.hashCode();
 		}
 	}
 }
