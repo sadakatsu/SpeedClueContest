@@ -1,7 +1,6 @@
 package org.cheddarmonk.cluedoai;
 
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.UnknownHostException;
 import java.util.*;
 
@@ -112,7 +111,8 @@ public class SimpleCluedoPlayer extends AbstractCluedoPlayer {
 	//*********************** Public Static Interface ************************//
 	public static void main(String[] args) throws Exception {
 		try {
-			System.setOut(new PrintStream("/tmp/speed-cluedo-player" + args[0]+".log"));
+			File logFile = new File(System.getProperty("java.io.tmpdir"), "speed-cluedo-player" + args[0]+".log");
+			System.setOut(new PrintStream(logFile));
 			new SimpleCluedoPlayer(args[0], Integer.parseInt(args[1])).run();
 		} catch (Throwable th) {
 			th.printStackTrace(System.out);
