@@ -35,6 +35,7 @@ public class Player {
 	private PrintWriter out;
 	private Socket socket;
 	private String identifier;
+    private int score;
 	
 	//*************************** Public Interface ***************************//
 	/**
@@ -53,6 +54,7 @@ public class Player {
 		Socket socket,
 		Process process
 	) throws IOException, ProtocolViolation {
+        score = 0;
 		// Wrap the Socket's input and output streams to ease messaging.
 		in = new BufferedReader(
 			new InputStreamReader(socket.getInputStream())
@@ -212,6 +214,10 @@ public class Player {
 		}
 		return sb.toString();
 	}
+
+    public void printStatics() {
+        System.out.format(" [%s]: %d\n", identifier, score);
+    }
 	
 	/**
 	 * Handles sending the specified accusation message to the connected AI and
@@ -465,4 +471,8 @@ public class Player {
 		System.out.format("    %s <<: \"%s\"\n", this, message);
 		out.format(message);
 	}
+
+    public void win() {
+        score += 1;
+    }
 }

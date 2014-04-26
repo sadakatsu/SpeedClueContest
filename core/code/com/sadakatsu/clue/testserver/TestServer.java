@@ -120,6 +120,7 @@ public class TestServer {
 				);
 				
 				if (correct) {
+                    current.win();
 					stillPlaying = 0;
 				} else {
 					current.lose();
@@ -141,6 +142,7 @@ public class TestServer {
 		}
 		
 		if (stillPlaying == 1) {
+            players.get(active).win();
 			System.out.format("%s wins by default.\n", players.get(active));
 		}
 	}
@@ -282,7 +284,13 @@ public class TestServer {
 			}
 		}
 	}
-	
+
+    public void printStatics() {
+        for(Player player: players) {
+            player.printStatics();
+        }
+    }
+
 	//*********************** Public Static Interface ************************//
 	/**
 	 * "java -jar testServer.jar script"
@@ -293,7 +301,11 @@ public class TestServer {
 	public static void main(String[] args) throws Exception {
 		TestServer ts = new TestServer(args[0]);
 		try {
-			ts.run();
+            int runCount = Integer.parseInt(args[1]);
+            for(int i = 0; i < runCount; i++) {
+                ts.run();
+            }
+            ts.printStatics();
 		} finally {
 			ts.cleanUp();
 		}
