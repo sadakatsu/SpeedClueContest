@@ -7,14 +7,9 @@ from time import sleep
 from . import protocol
 from .cards import CARDS
 
+
 class InvalidMoveError(Exception):
     pass
-
-CARDS = (
-    frozenset(('Gr', 'Mu', 'Pe', 'Pl', 'Sc', 'Wh')),
-    frozenset(('Ca', 'Kn', 'Pi', 'Re', 'Ro', 'Wr')),
-    frozenset(('Ba', 'Bi', 'Co', 'Di', 'Ha', 'Ki', 'Li', 'Lo', 'St')),
-)
 
 
 class ParallelRunner:
@@ -54,9 +49,6 @@ class Player:
         self.cards = []
         self.alive = True
         self.score = 0
-        # Doubly linked list
-        self.prev = None
-        self.next = None
 
     def interact(self, command):
         command = command.strip()
@@ -104,6 +96,7 @@ class Player:
         assert cmd == 'suggest'
         assert key not in self._suggested
         assert all((c in g) for c, g in zip(cards, CARDS)), cards
+        self._suggested.add(key)
         return cards
 
     def disprove(self, suggest_player_id, cards):
@@ -158,22 +151,7 @@ class Player:
         self._sock.close()
 
     def lose(self):
-        self.prev.next = self.next
-        self.next.prev = self.prev
-        self.quit()
-
-    def iter_from_next(self):
-        p = self
-        while p.next is not self:
-            p = p.next
-            yield p
-
-    def iter(self):
-        p = self
-        yield p
-        while p.next is not self:
-            p = p.next
-            yield p
+        self.alive = False
 
 
 class GameServer:
@@ -221,6 +199,12 @@ class GameServer:
                     break
             sleep(0.1)
 
+    def iter_players(self, players, start, skip=0, only_alive=True):
+        for i in range(start + skip, start + len(players)):
+            player = players[i % len(players)]
+            if not only_alive or player.alive:
+                yield player
+
     # @profile
     def run_game(self):
         players = list(self.players.values())
@@ -239,92 +223,62 @@ class GameServer:
             player.cards.append(card)
 
         for i, player in enumerate(players):
-            try:
-                player.reset(len(players), i, player.cards)
-            except Exception as e:
-                self.kill_player(player, e)
-
-        players = [player for player in players if player.alive]
-        for i, player in enumerate(players):
-            player.prev = players[i - 1]
-            players[i - 1].next = player
+            player.reset(len(players), i, player.cards)
 
         end = False
-        active_player = players[-1]
+        active_id = 0
         while not end:
-            print('=' * 80)
-            if active_player is active_player.next:
+            print('-' * 80)
+            active_player = next(self.iter_players(players, active_id))
+            active_id = active_player.id
+            if sum(1 for p in players if p.alive) == 1:
                 self.player_win(active_player)
                 break
-            active_player = active_player.next
 
             # suggest
-            try:
-                cards = active_player.suggest()
-            except Exception as e:
-                self.kill_player(active_player, e) 
-                continue
+            suggested_cards = active_player.suggest()
             # disprove
-            for player in active_player.iter_from_next():
-                if set(cards) & set(player.cards):
-                    try:
-                        disprove = player.disprove(active_player.id, cards)
-                        if disprove is not None:
-                            disprove_player = player
-                            break
-                    except Exception as e:
-                        self.kill_player(player, e)
+            for player in self.iter_players(players, active_id + 1, only_alive=False):
+                if set(suggested_cards) & set(player.cards):
+                    disprove = player.disprove(active_player.id, suggested_cards)
+                    if disprove is not None:
+                        disprove_player = player
+                        break
             else:
                 disprove = None
 
             def task(player):
-                try:
-                    if disprove is not None:
-                        if player is active_player or player is disprove_player:
-                            player.suggestion(active_player.id, cards, disprove_player.id, disprove)
-                        else:
-                            player.suggestion(active_player.id, cards, disprove_player.id)
+                if disprove is not None:
+                    if player is active_player or player is disprove_player:
+                        player.suggestion(active_player.id, suggested_cards,
+                            disprove_player.id, disprove)
                     else:
-                        player.suggestion(active_player.id, cards)
-                except Exception as e:
-                    self.kill_player(player, e)
+                        player.suggestion(active_player.id,
+                            suggested_cards, disprove_player.id)
+                else:
+                    player.suggestion(active_player.id, suggested_cards)
                 
-            # for player in active_player.iter():
-            #     task(player)
             runner = ParallelRunner()
-            for player in active_player.iter():
+            for player in self.iter_players(players, active_id):
                 runner.add_task(task, player)
             runner.wait()
             # accuse
-            try:
-                accuse_cards = active_player.accuse()
-            except Exception as e:
-                self.kill_player(active_player, e)
-                continue
+            accuse_cards = active_player.accuse()
             if accuse_cards is not None:
                 is_win = target == accuse_cards
-                for player in active_player.iter():
-                    try:
-                        player.accusation(active_player.id, accuse_cards, is_win)
-                    except Exception as e:
-                        self.kill_player(player, e)
+                for player in self.iter_players(players, active_id):
+                    player.accusation(active_player.id, accuse_cards, is_win)
                 if is_win:
                     self.player_win(active_player)
                     end = True
                 else:
                     self.player_lose(active_player)
-        print('-' * 80)
+
+        print('=' * 80)
         print('Scores:')
         for player in sorted(self.players.values(), key=lambda x: x.name):
             print('  {:20s}: {}'.format(player.name, player.score))
         print('-' * 80)
-
-
-    def kill_player(self, player, e):
-        raise
-        print(player.name, 'perform invalid move:', e)
-        print('kill', player.name)
-        player.lose()
 
     def player_win(self, player):
         player.score += 1

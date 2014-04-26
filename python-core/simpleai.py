@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import itertools
+
 from speedclue.playerproxy import Player, main
 from speedclue.cards import CARDS
 from speedclue.protocol import BufMessager, LineMessager
@@ -10,13 +12,12 @@ class SimpleAI(Player):
         self.n_players = player_count
         self.id = player_id
         self.cards = cards
-        self.suggested = set()
+        self.suggest_choices = list(itertools.product(*CARDS))
 
     def suggest(self):
-        while True:
-            cards = [random.choice(g) for g in CARDS]
-            if frozenset(cards) not in self.suggested:
-                return cards
+        cards = random.choice(self.suggest_choices)
+        self.suggest_choices.remove(cards)
+        return cards
 
     def suggestion(self, player_id, cards, disprove_player_id=None, card=None):
         pass
