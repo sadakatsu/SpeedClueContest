@@ -1,3 +1,12 @@
+"""
+Example usage:
+
+    python -m speedclue --port 8899 --count 20 ai-1.jar ai-2.jar ./ai-3.py
+
+This will start the server on port 8899 with 3 AI players. Then it runs 20 times
+and output the final result.
+
+"""
 import os
 from subprocess import Popen
 import argparse
