@@ -19,6 +19,8 @@ def launch_player_programs(programs, port):
         name = 'player#{}-{}'.format(i, os.path.split(prog)[1])
         if prog.endswith('jar'):
             args = ['java', '-jar', prog, name, str(port)]
+        elif prog.endswith('.py'):
+            args = ['python', prog, name, str(port)]
         else:
             args = [prog, name, str(port)]
         proc = Popen(args)

@@ -238,7 +238,7 @@ class GameServer:
             # suggest
             suggested_cards = active_player.suggest()
             # disprove
-            for player in self.iter_players(players, active_id + 1, only_alive=False):
+            for player in self.iter_players(players, active_id, 1, only_alive=False):
                 if set(suggested_cards) & set(player.cards):
                     disprove = player.disprove(active_player.id, suggested_cards)
                     if disprove is not None:
@@ -273,6 +273,7 @@ class GameServer:
                     end = True
                 else:
                     self.player_lose(active_player)
+            active_id = (active_id + 1) % len(players)
 
         print('=' * 80)
         print('Scores:')
