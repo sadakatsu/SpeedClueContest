@@ -9,12 +9,13 @@ and output the final result.
 """
 import os
 from subprocess import Popen
+from collections import OrderedDict
 import argparse
 from .gameserver import GameServer, BufGameServer
 
 
 def launch_player_programs(programs, port):
-    procs = {}
+    procs = OrderedDict()
     for i, prog in enumerate(programs):
         name = 'player#{}-{}'.format(i, os.path.split(prog)[1])
         if prog.endswith('jar'):
@@ -30,17 +31,20 @@ def launch_player_programs(programs, port):
     return procs
 
 parser = argparse.ArgumentParser('Speed Clue game server.')
-parser.add_argument('--count', dest='count', type=int, default=1)
-parser.add_argument('--port', dest='port', type=int, default=8080)
-parser.add_argument('--buf', help='Use buffer protocol',
+parser.add_argument('-c', '--count', dest='count', type=int, default=1)
+parser.add_argument('-p', '--port', dest='port', type=int, default=8080)
+parser.add_argument('-b', '--buf', help='Use buffer protocol',
     dest='buf', action='store_const', const=True, default=False)
+parser.add_argument('-n', '--noshuffle', help='Don\'t shuffle player positions',
+    dest='noshuffle', action='store_const', const=True, default=False)
 parser.add_argument('programs', metavar='PROGRAM', nargs=argparse.REMAINDER)
 args = parser.parse_args()
 if len(args.programs) < 3:
     print('Error: Need 3 to 6 players.')
     exit(1)
 
-server = (GameServer if not args.buf else BufGameServer)(args.port)
+server_class = GameServer if not args.buf else BufGameServer
+server = server_class(args.port, not args.noshuffle)
 procs = launch_player_programs(args.programs, args.port)
 try:
     server.collect_players(list(procs.keys()))

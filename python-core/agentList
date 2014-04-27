@@ -1,5 +1,0 @@
-java -jar ../core/randomAI.jar {randomAI-1} %%
-java -jar ../core/randomAI.jar {randomAI-2} %%
-python simpleai.py {simpleAI-1} %%
-java -jar ../entries/peter_taylor/dist/InferencePlayer.jar {inf-1} %%
-java -jar ../entries/peter_taylor/dist/InferencePlayer.jar {inf-2} %%

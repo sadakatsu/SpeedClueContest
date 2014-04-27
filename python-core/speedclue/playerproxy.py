@@ -5,6 +5,8 @@ class Player:
         self.name = name
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(addr)
+        self._logfile = open(name + '.log', 'w')
+        self._verbosity = 0
         self.messager = messager_class(sock)
         self._handlers = {
             'reset': self.handle_reset,
@@ -15,17 +17,21 @@ class Player:
             'accusation': self.handle_accusation,
             'done': self.handle_done,
         }
+        self.prepare()
+
+    def set_verbosity(self, v):
+        self._verbosity = v
 
     def handle_reset(self, player_count, player_id, *cards):
         self.reset(int(player_count), int(player_id), cards)
-        self.messager.send('ok')
+        self.send('ok')
 
     def reset(self, player_count, player_id, cards):
         raise NotImplementedError
 
     def handle_suggest(self):
         cards = self.suggest()
-        self.messager.send('suggest ' + ' '.join(cards))
+        self.send('suggest ' + ' '.join(cards))
 
     def suggest(self):
         raise NotImplementedError
@@ -34,54 +40,68 @@ class Player:
         player_id = int(player_id)
         self.suggestion(int(player_id), [c1, c2, c3],
             *(() if disprove_player_id == '-' else (int(disprove_player_id), card)))
-        self.messager.send('ok')
+        self.send('ok')
 
     def suggestion(self, player_id, cards, disprove_player_id=None, card=None):
         raise NotImplementedError
 
     def handle_disprove(self, suggest_player_id, *cards):
         result = self.disprove(int(suggest_player_id), cards)
-        self.messager.send('show ' + result)
+        self.send('show ' + result)
 
     def handle_accuse(self):
         result = self.accuse()
         if not result:
-            self.messager.send('-')
+            self.send('-')
         else:
-            self.messager.send('accuse ' + ' '.join(result))
+            self.send('accuse ' + ' '.join(result))
 
     def accuse(self):
         raise NotImplementedError
 
     def handle_accusation(self, player_id, c1, c2, c3, is_win):
         self.accusation(int(player_id), [c1, c2, c3], is_win == '+')
-        self.messager.send('ok')
+        self.send('ok')
 
     def accusation(self):
         raise NotImplementedError
 
     def handle_done(self):
         self.done()
-        self.messager.send('dead')
+        self._logfile.flush()
+        self.send('dead')
         self.messager.close()
         self._quit = True
 
     def done(self):
         pass
 
+    def send(self, msg):
+        if self._verbosity > 0:
+            self.log('send:[{}]'.format(msg))
+        self.messager.send(msg)
+
+    def prepare(self):
+        pass
+
     def run(self):
-        self.messager.send('{} alive'.format(self.name))
+        self.send('{} alive'.format(self.name))
         self._quit = False
         while not self._quit:
             msg = self.messager.recv()
             cmd, *args = msg.split()
             if cmd in self._handlers:
+                if self._verbosity > 0:
+                    self.log('recv:[{}]'.format(msg))
                 self._handlers[cmd](*args)
             else:
                 self.log('unknown command:', cmd, 'msg:', msg)
 
     def log(self, *args, **kwargs):
-        print('[{}]:'.format(self.name), *args, **kwargs)
+        print(*args, file=self._logfile, **kwargs)
+
+    def __del__(self):
+        self._logfile.close()
 
 
 def main(player_class, messager_class):

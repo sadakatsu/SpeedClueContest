@@ -158,8 +158,9 @@ class GameServer:
     MAX_PLAYERS = 6
     messager_class = protocol.LineMessager
 
-    def __init__(self, port):
+    def __init__(self, port, shuffle=True):
         self.port = port
+        self.shuffle = shuffle
         self.listen_sock = sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         addr = ('', port)
         print('Game server listen on ({}, {}).'.format(*addr))
@@ -199,6 +200,8 @@ class GameServer:
                     break
             sleep(0.1)
 
+        self.player_names = names
+
     def iter_players(self, players, start, skip=0, only_alive=True):
         for i in range(start + skip, start + len(players)):
             player = players[i % len(players)]
@@ -207,10 +210,11 @@ class GameServer:
 
     # @profile
     def run_game(self):
-        players = list(self.players.values())
-        random.shuffle(players)
+        players = [self.players[name] for name in self.player_names]
+        if self.shuffle:
+            random.shuffle(players)
         # Choose 3 cards as target
-        target = [random.choice(list(g)) for g in CARDS] 
+        target = self.target = [random.choice(list(g)) for g in CARDS] 
         # Collect remaining cards
         cards = []
         for t, g in zip(target, CARDS):
@@ -227,13 +231,16 @@ class GameServer:
 
         end = False
         active_id = 0
+        round_count = 0
         while not end:
-            print('-' * 80)
             active_player = next(self.iter_players(players, active_id))
             active_id = active_player.id
             if sum(1 for p in players if p.alive) == 1:
                 self.player_win(active_player)
                 break
+            print('-' * 80)
+            print('|round {}, active_id {}'.format(round_count, active_id))
+            round_count += 1
 
             # suggest
             suggested_cards = active_player.suggest()
@@ -276,9 +283,10 @@ class GameServer:
             active_id = (active_id + 1) % len(players)
 
         print('=' * 80)
-        print('Scores:')
-        for player in sorted(self.players.values(), key=lambda x: x.name):
-            print('  {:20s}: {}'.format(player.name, player.score))
+        print(':: Scores:')
+        for name in self.player_names:
+            player = self.players[name]
+            print('::  {:20s}: {}'.format(player.name, player.score))
         print('-' * 80)
 
     def player_win(self, player):
@@ -286,7 +294,7 @@ class GameServer:
         print('{} win, game over.'.format(player.name))
 
     def player_lose(self, player):
-        print('{} lose, game over.'.format(player.name))
+        print('{} lose. target: {}'.format(player.name, self.target))
         player.lose()
 
     def quit(self):
