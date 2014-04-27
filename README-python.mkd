@@ -1,0 +1,12 @@
+In the `python-core` folder, you can find the speedclue package. It contains a game server
+and player proxy. They are both compatible to the java testServer and AI interface. That
+means you can use:
+
+ * python server <---> python ai
+ * java server <---> python ai
+ * python server <---> java ai
+ * java server <---> java ai
+
+You can find usage example of the player proxy in `python-core/simpleai.py`.
+
+Also, `test.sh` and `testjava.sh` are provided as an usage example for the test servers.
