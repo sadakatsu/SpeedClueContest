@@ -104,7 +104,7 @@ class PlayerInfo:
                         group1[0].set_owner(self)
                         updated = True
                         static = False
-                    else:
+                    elif group1:
                         new_groups.append(group1)
             self.selection_groups = new_groups
 
@@ -253,8 +253,6 @@ class AI00(Player):
             for name in cards:
                 player.may_have.discard(self.card_map[name])
             player.update()
-            if player_id == self.player.id:
-                sys.stdout.flush()
 
     def get_cards_by_names(self, names):
         return [self.card_map[name] for name in names]

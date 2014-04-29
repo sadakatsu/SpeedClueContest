@@ -106,21 +106,25 @@ class PlayerInfo:
                         group1[0].set_owner(self)
                         updated = True
                         static = False
-                    else:
+                    elif group1:
                         new_groups.append(group1)
             self.selection_groups = new_groups
 
             if len(self.must_have) + 1 == self.n_cards:
-                cards = set(self.may_have)
+                # There is only one card remain to be unknown, so this card must
+                # be in all selection groups
+                cards = self.may_have.copy()
                 for group in self.selection_groups:
-                    group = set(group)
                     if self.must_have.isdisjoint(group):
                         cards.intersection_update(group)
-                for card in [card for card in self.may_have if card not in cards]:
+
+                for card in self.may_have - cards:
                     static = False
                     updated = True
                     self.set_have_not_card(card)
 
+        # assert self.must_have.isdisjoint(self.may_have)
+        # assert len(self.must_have | self.may_have) >= self.n_cards
         return updated
 
 
@@ -163,36 +167,37 @@ class AI00(Player):
                 self.player.set_have_not_card(card)
         self.suggestions = []
         self.avail_suggestions = set(itertools.product(*CARDS))
-        self.possible_solutions = set(
-            tuple(self.get_cards_by_names(cards)) for cards in self.avail_suggestions)
+        self.possible_solutions = {
+            tuple(self.get_cards_by_names(cards)): 1
+            for cards in self.avail_suggestions
+        }
         self.filter_solutions()
 
     def filter_solutions(self):
-        new_solutions = []
-        if not self.possible_solutions:
-            return False
+        new_solutions = {}
+        # assert self.possible_solutions
         join = next(iter(self.possible_solutions))
         for sol in self.possible_solutions:
             for card, type in zip(sol, self.card_types):
                 if card.owner or type.solution and card is not type.solution:
+                    # This candidate can not be a solution because it has a
+                    # card that has owner or this type is solved.
                     break
             else:
                 count = self.check_solution(sol)
                 if count:
-                    new_solutions.append(sol)
+                    new_solutions[sol] = count
                     join = tuple(((x is y) and x) for x, y in zip(join, sol))
-                if len(self.possible_solutions) < 10:
-                    self.log('solution: {} {}'.format(sol, count))
-        self.possible_solutions = set(new_solutions)
+        self.possible_solutions = new_solutions
         updated = False
         for card in join:
             if card and not card.in_solution:
                 card.set_as_solution()
                 updated = True
-                self.log('wow', card, 'in', join)
+                self.log('found new target', card, 'in', join)
 
         self.dump()
-        self.log('possible_solutions:', len(self.possible_solutions))
+
         return updated
 
     def check_solution(self, solution):
@@ -200,24 +205,25 @@ class AI00(Player):
         This must be called after each player is updated.
         """
         players = self.players
-        n = len(players)
-        avail_cards = set(
-            card for card in self.cards if card.owner is None and not card.in_solution)
-        if len(avail_cards) > 10:
+        avail_cards = set(card for card in self.cards if card.possible_owners)
+        avail_cards -= set(solution)
+        if len(avail_cards) >= 8:
             return 1
         count = 0
 
         def resolve_player(i, avail_cards):
             nonlocal count
-            if i == n:
+            if i == len(players):
                 count += 1
                 return
             player = players[i]
             n_take = player.n_cards - len(player.must_have)
             cards = avail_cards & player.may_have
             for choice in map(set, itertools.combinations(cards, n_take)):
+                player_cards = player.must_have | choice
                 for group in player.selection_groups:
-                    if choice.isdisjoint(group):
+                    if player_cards.isdisjoint(group):
+                        # Invalid choice
                         break
                 else:
                     resolve_player(i + 1, avail_cards - choice)
@@ -226,6 +232,7 @@ class AI00(Player):
         return count
 
     def suggest(self):
+        # sg = max(self.possible_solutions, key=self.possible_solutions.get)
         sg = []
         for type in self.card_types:
             card = min((card for card in type.cards if card.owner is None),
@@ -262,6 +269,7 @@ class AI00(Player):
             else:
                 # Add a selection group to the disproving player
                 sg.dplayer.selection_groups.append(sg.cards)
+            self.possible_solutions.pop(tuple(sg.cards), None)
 
         self.update()
 
@@ -304,6 +312,12 @@ class AI00(Player):
     def accuse(self):
         if all(type.solution for type in self.card_types):
             return [type.solution.name for type in self.card_types]
+        most_possible = max(self.possible_solutions, key=self.possible_solutions.get)
+        total = sum(self.possible_solutions.values())
+        self.log('rate:', self.possible_solutions[most_possible] / total)
+        if self.possible_solutions[most_possible] > 0.7 * total:
+            self.log('guess', most_possible)
+            return [card.name for card in most_possible]
         return None
 
     def disprove(self, suggest_player_id, cards):
@@ -317,8 +331,12 @@ class AI00(Player):
 
     def accusation(self, player_id, cards, is_win):
         if not is_win:
-            self.possible_solutions.discard(tuple(self.get_cards_by_names(cards)))
-            self.filter_solutions()
+            self.possible_solutions.pop(tuple(self.get_cards_by_names(cards)), None)
+            # XXX: Dangerous
+            player = self.players[player_id]
+            for name in cards:
+                player.may_have.discard(self.card_map[name])
+            player.update()
 
     def get_cards_by_names(self, names):
         return [self.card_map[name] for name in names]
@@ -326,10 +344,15 @@ class AI00(Player):
     def dump(self):
         self.log()
         for player in self.players:
-            self.log(player.id,
+            self.log('player:', player.id, player.n_cards,
                 sorted(player.must_have, key=lambda x: x.name),
-                sorted(player.may_have, key=lambda x: x.name))
-        self.log([type.solution for type in self.card_types])
+                sorted(player.may_have, key=lambda x: x.name),
+                '\n    ',
+                player.selection_groups)
+        self.log('current:', [type.solution for type in self.card_types])
+        self.log('possible_solutions:', len(self.possible_solutions))
+        for sol, count in self.possible_solutions.items():
+            self.log('  ', sol, count)
         self.log('id|', end='')
 
         def end():
