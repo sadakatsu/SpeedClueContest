@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using ClueSharp;
 using NUnit.Framework;
@@ -11,8 +8,8 @@ namespace ClueBot.tests
   [TestFixture]
   class ClueClientTest
   {
-    private DummyClient client;
-    private DummyAI ai;
+    private DummyClient m_client;
+    private DummyAI m_ai;
 
     class DummyAI : IClueAI
     {
@@ -86,59 +83,59 @@ namespace ClueBot.tests
     [SetUp]
     public void Init()
     {
-      ai = new DummyAI();
-      client = new DummyClient();
+      m_ai = new DummyAI();
+      m_client = new DummyClient();
     }
 
     [Test]
     public void TestProcessMessageString()
     {
-      var s = "reset 4 3 Gr Sc St Bi";
-      client.ProcessMessageString(ai, s);
-      Assert.AreEqual("reset", ai.Records[0]);
-      Assert.AreEqual("ok", client.Sent[0]);
+      const string s = "reset 4 3 Gr Sc St Bi";
+      m_client.ProcessMessageString(m_ai, s);
+      Assert.AreEqual("reset", m_ai.Records[0]);
+      Assert.AreEqual("ok", m_client.Sent[0]);
     }
 
     [Test]
     public void TestProcessMessageStringSuggest()
     {
-      var s = "suggest";
-      client.ProcessMessageString(ai, s);
-      Assert.AreEqual("suggest", ai.Records[0]);
-      Assert.AreEqual(1, client.Sent.Count);
+      const string s = "suggest";
+      m_client.ProcessMessageString(m_ai, s);
+      Assert.AreEqual("suggest", m_ai.Records[0]);
+      Assert.AreEqual(1, m_client.Sent.Count);
       var suggestResponseRegex = new Regex("suggest( [A-Z][a-z]){3}");
-      Assert.IsTrue(suggestResponseRegex.IsMatch(client.Sent[0]));
+      Assert.IsTrue(suggestResponseRegex.IsMatch(m_client.Sent[0]));
     }
 
     [Test]
     public void TestProcessMessageStringDisprove()
     {
-      var s = "disprove 0 Sc Ca Bi";
-      client.ProcessMessageString(ai, s);
-      Assert.AreEqual("disprove", ai.Records[0]);
-      Assert.AreEqual(1, client.Sent.Count);
+      const string s = "disprove 0 Sc Ca Bi";
+      m_client.ProcessMessageString(m_ai, s);
+      Assert.AreEqual("disprove", m_ai.Records[0]);
+      Assert.AreEqual(1, m_client.Sent.Count);
       var suggestResponseRegex = new Regex("-|show( [A-Z][a-z]){0,1}");
-      Assert.IsTrue(suggestResponseRegex.IsMatch(client.Sent[0]));
+      Assert.IsTrue(suggestResponseRegex.IsMatch(m_client.Sent[0]));
     }
 
 
     [Test]
     public void TestProcessMessageStringAccuse()
     {
-      var s = "accuse";
-      client.ProcessMessageString(ai, s);
-      Assert.AreEqual("accuse", ai.Records[0]);
-      Assert.AreEqual(1, client.Sent.Count);
+      const string s = "accuse";
+      m_client.ProcessMessageString(m_ai, s);
+      Assert.AreEqual("accuse", m_ai.Records[0]);
+      Assert.AreEqual(1, m_client.Sent.Count);
       var suggestResponseRegex = new Regex("-|accuse( [A-Z][a-z]){3}");
-      Assert.IsTrue(suggestResponseRegex.IsMatch(client.Sent[0]));
+      Assert.IsTrue(suggestResponseRegex.IsMatch(m_client.Sent[0]));
     }
 
     [Test]
     public void TestProcessMessageStringWithNulls()
     {
-      var s = "reset 4 3 Gr Sc St Bi\0\0\0\0\0\0\0\0\0\0";
-      client.ProcessMessageString(ai, s);
-      Assert.AreEqual("reset", ai.Records[0]);
+      const string s = "reset 4 3 Gr Sc St Bi\0\0\0\0\0\0\0\0\0\0";
+      m_client.ProcessMessageString(m_ai, s);
+      Assert.AreEqual("reset", m_ai.Records[0]);
     }
   }
 }

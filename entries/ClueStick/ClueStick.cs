@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using ClueSharp;
 using ClueSharp.tests;
-using NUnit.Framework;
 
 namespace ClueStick
 {
@@ -14,22 +13,21 @@ namespace ClueStick
     private List<Room> m_rooms;
     private IEnumerator<MurderSet> m_suggestions;
     private MurderSet? m_accusation;
-
-    public ClueStick()
-    {
-      m_suggestions = MurderSet.AllSuggestions.GetEnumerator();
-    }
+    private int m_identity;
 
     public void Reset(int n, int i, IEnumerable<Suspect> suspects, IEnumerable<Weapon> weapons, IEnumerable<Room> rooms)
     {
+      m_identity = i;
       m_suspects = suspects.ToList();
       m_weapons = weapons.ToList();
       m_rooms = rooms.ToList();
+      m_accusation = null;
+      m_suggestions = MurderSet.AllSuggestions.GetEnumerator();
     }
 
     public void Suggestion(int suggester, MurderSet suggestion, int? disprover, Card disproof)
     {
-      if (disproof == null)
+      if (disprover == null && suggester != m_identity)
       {
         m_accusation = suggestion;
       }
@@ -72,5 +70,6 @@ namespace ClueStick
   }
 
   public class ClueStickTest : ClueAITest<ClueStick>
-  {}
+  {
+  }
 }

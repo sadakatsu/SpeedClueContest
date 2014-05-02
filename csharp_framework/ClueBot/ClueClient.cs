@@ -6,7 +6,7 @@ using ClueSharp;
 
 namespace ClueBot
 {
-  class ClueClient
+  public class ClueClient
   {
     private readonly NetworkStream m_stream;
     
