@@ -1,9 +1,11 @@
 package com.sadakatsu.clue.testserver;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.ProcessBuilder.Redirect;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import com.sadakatsu.clue.cards.Suggestion;
 import com.sadakatsu.clue.exception.DuplicateSuggestion;
 import com.sadakatsu.clue.exception.InvalidDisprove;
 import com.sadakatsu.clue.exception.ProtocolViolation;
+import com.sadakatsu.clue.server.Player;
 
 /**
  * The TestServer handles launching the AIs listed in a script, having them play
@@ -66,6 +69,12 @@ public class TestServer {
 	{
 		int playerCount = players.size();
 		
+		System.out.println();
+		for (int i = 0; i < 79; ++i) {
+			System.out.print("-");
+		}
+		System.out.println("\nGame Start.");
+		
 		Suggestion solution = chooseSolution();
 		System.out.format("Chosen Solution: %s\n", solution);
 		
@@ -78,8 +87,19 @@ public class TestServer {
 		int stillPlaying = playerCount;
 		while (stillPlaying > 1) {
 			Player current = players.get(active);
+			
+			System.out.println();
+			for (int i = 0; i < 79; ++i) {
+				System.out.print("-");
+			}
+			System.out.format(
+				"\nIt is %s's turn.\nWhat does %s suggest?\n",
+				current,
+				current
+			);
+			
 			Suggestion suggestion = current.suggest();
-			System.out.format("%s suggests %s\n", current, suggestion);
+			System.out.format("\n%s suggests %s.\n", current, suggestion);
 			
 			Card shown = null;
 			int disprover;
@@ -90,13 +110,13 @@ public class TestServer {
 			) {
 				Player next = players.get(disprover);
 				if (next.canDisprove(suggestion)) {
-					System.out.format("%s can disprove.\n", next);
+					System.out.format("  %s can disprove.\n", next);
 					shown = next.disprove(active, suggestion);
-					System.out.format("%s shows %s.\n", next, shown);
+					System.out.format("%s disproves with %s.\n", next, shown);
 					break;
 				}
 				
-				System.out.format("%s cannot disprove...\n", next);
+				System.out.format("  %s cannot disprove.\n", next);
 			}
 			
 			for (int i = 0; i < playerCount; ++i) {
@@ -108,12 +128,13 @@ public class TestServer {
 				);
 			}
 			
+			System.out.format("\nWill %s make an accusation?\n", current);
 			Suggestion accusation = current.accuse();
 			if (accusation != null) {
 				boolean correct = accusation.equals(solution);
 				
 				System.out.format(
-					"%s makes the accusation %s... it is %s\n",
+					"%s makes the accusation %s.\nIt is %s\n",
 					current,
 					accusation,
 					(correct ? "right!" : "wrong.")
@@ -143,6 +164,16 @@ public class TestServer {
 		if (stillPlaying == 1) {
 			System.out.format("%s wins by default.\n", players.get(active));
 		}
+		
+		System.out.println("\n");
+		for (int i = 0; i < 79; ++i) {
+			System.out.print("-");
+		}
+		
+		System.out.format(
+			"\nThe game is over.\nThe winner is %s.\n",
+			players.get(active)
+		);
 	}
 	
 	//******************* Protected and Private Interface ********************//
@@ -254,8 +285,9 @@ public class TestServer {
 	{
 		int portNumber = accept.getLocalPort(); 
 		Pattern getIdentifier = Pattern.compile("\\{([^}]+)\\}");
-		Runtime r = Runtime.getRuntime();
 		String portString = String.valueOf(portNumber);
+		
+		System.out.println("Launching Players...");
 		
 		try (
 			BufferedReader br = new BufferedReader(
@@ -276,9 +308,19 @@ public class TestServer {
 				
 				System.out.format("Starting \"%s\": %s\n", identifier, line);
 				
-				Process process = r.exec(line);
+				ProcessBuilder pb = new ProcessBuilder(line.split(" "));
+				// pb.redirectError(Redirect.INHERIT);
+				// pb.redirectOutput(Redirect.INHERIT);
+				File f = new File(String.format("output_%s.txt", identifier));
+				pb.redirectError(f);
+				pb.redirectOutput(f);
+				Process process = pb.start();
+				
+				System.out.println("... started");
 				Socket socket = accept.accept();
+				System.out.println("... accepted");
 				players.add(new Player(identifier, socket, process));
+				System.out.println("... running!");
 			}
 		}
 	}

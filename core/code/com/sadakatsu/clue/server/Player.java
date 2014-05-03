@@ -1,4 +1,4 @@
-package com.sadakatsu.clue.testserver;
+package com.sadakatsu.clue.server;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -437,20 +437,25 @@ public class Player {
 	 * @throws IOException
 	 */
 	private String getResponse() throws IOException {
+		/*
 		if (programOutput != null) {
 			while (!in.ready()) {
 				while (programOutput.ready()) {
-					programOutput.readLine();
+					System.out.format(
+						"{CLIENT} %s\n",
+						programOutput.readLine()
+					);
 				}
 			}
 		}
+		//*/
 		
 		int read = in.read(buffer);
 		while (read > 0 && buffer[read - 1] == '\0') {
 			--read;
 		}
 		
-		String response = String.copyValueOf(buffer, 0, read);
+		String response = (read > 0 ? String.copyValueOf(buffer, 0, read) : "");
 		System.out.format("    %s :>> \"%s\"\n", this, response);
 		return response;
 	}

@@ -1,6 +1,6 @@
 package com.sadakatsu.clue.exception;
 
-import com.sadakatsu.clue.testserver.Player;
+import com.sadakatsu.clue.server.Player;
 
 /**
  * A ProtocolViolation means that a server/AI received a message that does not

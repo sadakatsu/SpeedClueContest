@@ -2,7 +2,7 @@ package com.sadakatsu.clue.exception;
 
 import com.sadakatsu.clue.cards.Card;
 import com.sadakatsu.clue.cards.Suggestion;
-import com.sadakatsu.clue.testserver.Player;
+import com.sadakatsu.clue.server.Player;
 
 /**
  * The InvalidDisprove represents that a Player (server-side) or AI (client-
