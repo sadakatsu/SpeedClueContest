@@ -137,12 +137,14 @@ class Suggestion:
         self.disproved = dplayer is not None
 
 
-class AI00(Player):
+class AI01(Player):
     def prepare(self):
         self.set_verbosity(1)
 
     def reset(self, player_count, player_id, card_names):
         self.log('reset', 'id=', player_id, card_names)
+        self.fail_count = 0
+        self.suggest_count = 0
         self.card_types = [CardType(i) for i in range(len(CARDS))]
         self.cards = list(itertools.chain(*(ct.cards for ct in self.card_types)))
         for card in self.cards:
@@ -232,18 +234,27 @@ class AI00(Player):
         return count
 
     def suggest(self):
-        # sg = max(self.possible_solutions, key=self.possible_solutions.get)
-        sg = []
+        choices = []
         for type in self.card_types:
-            card = min((card for card in type.cards if card.owner is None),
-                key=lambda card: len(card.possible_owners))
-            sg.append(card.name)
-        sg = tuple(sg)
+            choices.append([])
+            if type.solution:
+                choices[-1].extend(self.player.must_have & set(type.cards))
+            else:
+                choices[-1].extend(sorted(
+                    (card for card in type.cards if card.owner is None),
+                    key=lambda card: len(card.possible_owners)))
 
-        if sg is None or sg not in self.avail_suggestions:
-            sg = self.avail_suggestions.pop()
+        for sgi in sorted(itertools.product(*map(lambda x:range(len(x)), choices)),
+                key=sum):
+            sg = tuple(choices[i][j].name for i, j in enumerate(sgi))
+            if sg in self.avail_suggestions:
+                self.avail_suggestions.remove(sg)
+                break
         else:
-            self.avail_suggestions.remove(sg)
+            sg = self.avail_suggestions.pop()
+            self.fail_count += 1
+            self.log('fail')
+        self.suggest_count += 1
         return sg
 
     def suggestion(self, player_id, cards, disprove_player_id=None, card=None):
@@ -333,10 +344,13 @@ class AI00(Player):
         if not is_win:
             self.possible_solutions.pop(tuple(self.get_cards_by_names(cards)), None)
             # XXX: Dangerous
-            player = self.players[player_id]
-            for name in cards:
-                player.may_have.discard(self.card_map[name])
-            player.update()
+            # player = self.players[player_id]
+            # for name in cards:
+            #     player.may_have.discard(self.card_map[name])
+            # player.update()
+        else:
+            self.log('fail rate:', self.fail_count / (1e-8 + self.suggest_count))
+            self.log('fail count:', self.fail_count, 'suggest count:', self.suggest_count)
 
     def get_cards_by_names(self, names):
         return [self.card_map[name] for name in names]
@@ -371,4 +385,4 @@ class AI00(Player):
 
 
 if __name__ == '__main__':
-    main(AI00, BufMessager)
+    main(AI01, BufMessager)

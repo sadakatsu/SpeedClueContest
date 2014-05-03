@@ -248,11 +248,12 @@ class AI00(Player):
         return max(cards, key=lambda c: len(c.disproved_to)).name
 
     def accusation(self, player_id, cards, is_win):
-        if not is_win:
-            player = self.players[player_id]
-            for name in cards:
-                player.may_have.discard(self.card_map[name])
-            player.update()
+        pass
+        # if not is_win:
+        #     player = self.players[player_id]
+        #     for name in cards:
+        #         player.may_have.discard(self.card_map[name])
+        #     player.update()
 
     def get_cards_by_names(self, names):
         return [self.card_map[name] for name in names]
