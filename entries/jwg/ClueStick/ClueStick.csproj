@@ -49,11 +49,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\csharp_framework\ClueBot\ClueBot.csproj">
+    <ProjectReference Include="..\..\..\csharp_framework\ClueBot\ClueBot.csproj">
       <Project>{57B82776-C377-4D60-8DFE-A1DC7504774D}</Project>
       <Name>ClueBot</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\csharp_framework\ClueSharp\ClueSharp.csproj">
+    <ProjectReference Include="..\..\..\csharp_framework\ClueSharp\ClueSharp.csproj">
       <Project>{BA33FE1D-CC35-4308-913F-EF4F2335A1D2}</Project>
       <Name>ClueSharp</Name>
     </ProjectReference>
