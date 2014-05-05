@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ClueSharp
 {
@@ -20,6 +22,8 @@ namespace ClueSharp
       m_weapon = weapon;
       m_room = room;
     }
+
+    
 
     public Suspect Suspect
     {
@@ -47,25 +51,20 @@ namespace ClueSharp
     {
       get
       {
-        var suspects = Enum.GetValues(typeof (Suspect));
-        var weapons = Enum.GetValues(typeof(Weapon));
-        var rooms = Enum.GetValues(typeof(Room));
-        
-        foreach (var suspect in suspects)
-        {
-          foreach (var weapon in weapons)
-          {
-            foreach (var room in rooms)
-            {
-              // TODO: i don't like this
-              if ((Suspect)suspect == Suspect.None || (Suspect)suspect == Suspect.Count
-                || (Weapon)weapon == Weapon.None || (Weapon)weapon == Weapon.Count
-                || (Room)room == Room.None || (Room)room == Room.Count)
-              { continue; }
-                yield return new MurderSet(suspect, weapon, room);
-            }
-          }
-        }
+        return from suspect in Card.AllSuspects
+               from weapon in Card.AllWeapons
+               from room in Card.AllRooms
+               select new MurderSet(suspect, weapon, room);
+      }
+    }
+
+    public IEnumerable<Enum> Values
+    {
+      get
+      {
+        yield return Suspect;
+        yield return Weapon;
+        yield return Room;
       }
     }
   }

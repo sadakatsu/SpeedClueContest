@@ -5,7 +5,7 @@ namespace ClueSharp.tests
   [TestFixture]
   public abstract class ClueAITest<T> where T : IClueAI, new()
   {
-    private T m_ai;
+    protected T m_ai;
 
     [SetUp]
     public void Init()

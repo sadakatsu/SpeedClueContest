@@ -21,7 +21,9 @@ namespace ClueBot
     public static MurderSet ParseSet(IEnumerable<string> cards)
     {
       var cardList = cards.ToList();
-      return new MurderSet(ClueSharp.EnumConversion.ParseOneCard(cardList[0]), ClueSharp.EnumConversion.ParseOneCard(cardList[1]), ClueSharp.EnumConversion.ParseOneCard(cardList[2]));
+      return new MurderSet(EnumConversion.ParseOneCard(cardList[0]),
+                           EnumConversion.ParseOneCard(cardList[1]),
+                           EnumConversion.ParseOneCard(cardList[2]));
     }
 
     public static Card ParseCard(string s)
