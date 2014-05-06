@@ -22,7 +22,7 @@ you wish so long as it obeys the following restrictions:
    
    - Failing to make an accusation when it has (or should have) learned the
      solution, though this will only be enforced in situations when no player
-	 could disprove its suggestion.
+     could disprove its suggestion.
 
 5. It may never make any suggestion more than one time in a game.  While this is
    not forbidden in actual Speed Clue rules, allowing AIs to make the same
