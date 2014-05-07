@@ -9,6 +9,14 @@
 			<compilerarg value="-Xlint" />
 		</javac>
 	</target>
+	
+	<target name="contestServer.jar" depends="compile" description="Generate contestServer.jar.">
+			<jar destfile="contestServer.jar" basedir="${build.dir}">
+				<manifest>
+					<attribute name="Main-Class" value="com.sadakatsu.clue.contestserver.ContestServer" />
+				</manifest>
+			</jar>
+		</target>
 
 	<target name="testServer.jar" depends="compile" description="Generate testServer.jar.">
 		<jar destfile="testServer.jar" basedir="${build.dir}">
@@ -34,7 +42,7 @@
 		<javadoc sourcepath="${src.dir}" destdir="doc" />
 	</target>
 	
-	<target name="all" depends="testServer.jar, randomAI.jar, clue.jar, document" />
+	<target name="all" depends="contestServer.jar, testServer.jar, randomAI.jar, clue.jar, document" />
 
 	<target name="clean" description="Delete all generated files.">
 		<delete dir="${build.dir}" />

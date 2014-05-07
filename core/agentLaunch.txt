@@ -1,4 +1,6 @@
-cmd /c START java -jar randomAI.jar {A} %% true
-java -jar randomAI.jar {B} %%
-java -jar randomAI.jar {C} %%
-java -jar randomAI.jar {D} %%
+java -jar randomAI.jar {RP} %%
+java -jar ../entries/peter_taylor/dist/SimpleCluedoPlayer.jar {SP} %%
+java -jar ../entries/peter_taylor/dist/InferencePlayer.jar {IP} %%
+python34 ../entries/ray/ai01.py {00} %%
+../entries/jwg/ClueBat/bin/Release/ClueBat.exe {CB} %%
+../entries/jwg/ClueByFour/bin/Release/ClueByFour.exe {C4} %%

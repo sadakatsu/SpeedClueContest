@@ -1,21 +1,28 @@
-package com.sadakatsu.clue.server;
+package com.sadakatsu.clue.contestserver;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.sadakatsu.clue.cards.Card;
+import com.sadakatsu.clue.cards.Hand;
 import com.sadakatsu.clue.cards.Suggestion;
+import com.sadakatsu.clue.exception.ClueException;
 import com.sadakatsu.clue.exception.DuplicateSuggestion;
 import com.sadakatsu.clue.exception.InvalidDisprove;
 import com.sadakatsu.clue.exception.InvalidSuggestionString;
+import com.sadakatsu.clue.exception.MissedAccusation;
 import com.sadakatsu.clue.exception.ProtocolViolation;
+import com.sadakatsu.clue.exception.SuicidalAccusation;
+import com.sadakatsu.clue.exception.TimeoutViolation;
 
 /**
  * The Player represents an AI's server-side state and facilitates the server's
@@ -26,13 +33,15 @@ import com.sadakatsu.clue.exception.ProtocolViolation;
 public class Player {
 	//********************* Protected and Private Fields *********************//
 	private boolean eliminated;
+	private boolean mustAccuse;
 	private BufferedReader in;
-	private BufferedReader programOutput;
+	private ClueException violation;
 	private char[] buffer;
 	private int index = -1;
-	private List<Card> hand;
+	private Hand hand;
 	private List<Suggestion> suggestions;
 	private PrintWriter out;
+	private Set<Card> seen;
 	private Socket socket;
 	private String identifier;
 	
@@ -43,36 +52,28 @@ public class Player {
 	 * The identifier the server assigned to the AI.
 	 * @param socket
 	 * The Socket through which to communicate with the AI.
-	 * @param process
-	 * The process that was used to launch the AI.
 	 * @throws IOException
 	 * @throws ProtocolViolation
+	 * @throws TimeoutViolation 
 	 */
 	public Player(
 		String identifier,
-		Socket socket,
-		Process process
-	) throws IOException, ProtocolViolation {
+		Socket socket
+	) throws IOException, ProtocolViolation, TimeoutViolation {
 		// Wrap the Socket's input and output streams to ease messaging.
 		in = new BufferedReader(
 			new InputStreamReader(socket.getInputStream())
 		);
 		out = new PrintWriter(socket.getOutputStream(), true);
 		
-		// Get the process's output stream.  If the AI writes messages to its
-		// stdout for programmers to monitor for debugging, the Player needs to
-		// empty this buffer to prevent deadlock.
-		InputStream is = process.getInputStream();
-		if (is != null) {
-			programOutput = new BufferedReader(new InputStreamReader(is));
-		} else {
-			programOutput = null;
-		}
+		// Enforce the contest's timeout rules.
+		socket.setSoTimeout(TimeoutViolation.TIMEOUT);
 		
 		// Initialize all the Player internal state.
 		buffer = new char[512];
 		eliminated = true;
-		hand = new ArrayList<>();
+		hand = null;
+		violation = null;
 		suggestions = new ArrayList<>();
 		this.identifier = identifier;
 		this.socket = socket;
@@ -105,14 +106,24 @@ public class Player {
 	 * true if the Player has the passed Card in his hand, false otherwise.
 	 */
 	public boolean has(Card card) {
-		return hand.contains(card);
+		return hand.has(card);
+	}
+	
+	/**
+	 * Whether this Player has violated the contest rules and thus may not play
+	 * any more games.
+	 * @return
+	 * true if the Player has been disqualified, false otherwise.
+	 */
+	public boolean isDisqualified() {
+		return violation != null;
 	}
 	
 	/**
 	 * Whether this Player has made an incorrect accusation and thus lost the
 	 * game.
 	 * @return
-	 * true if the Player has already lost, false otherwise
+	 * true if the Player has already lost, false otherwise.
 	 */
 	public boolean isEliminated() {
 		return eliminated;
@@ -131,15 +142,16 @@ public class Player {
 	 * @throws IOException
 	 * @throws ProtocolViolation
 	 * @throws InvalidDisprove
+	 * @throws TimeoutViolation 
 	 */
 	public Card disprove(
 		int suggesterIndex,
 		Suggestion suggestion
-	) throws IOException, ProtocolViolation, InvalidDisprove {
+	) throws IOException, ProtocolViolation, InvalidDisprove, TimeoutViolation {
 		// If the Player has only one Card in the Suggestion, return that.
-		List<Card> candidates = getDisproveCards(suggestion);
+		Collection<Card> candidates = getDisproveCards(suggestion);
 		if (candidates.size() == 1) {
-			return candidates.get(0);
+			return candidates.iterator().next();
 		}
 		
 		// Ask the connected AI which Card to use.
@@ -179,11 +191,22 @@ public class Player {
 	}
 	
 	/**
+	 * The reason why this Player was disqualified.
+	 * @return
+	 * The ClueException that flagged the disqualification, or null if the
+	 * Player has not been disqualified.
+	 */
+	public ClueException getViolation() {
+		return violation;
+	}
+	
+	/**
 	 * The Player's position in the play order.
 	 * @return
 	 * A number in the range [0..numberOfPlayers) if the Player is in a game.
-	 * If the Player is not in a game, this was the Player's index in the last
-	 * game he played (or -1 if he has not yet played a game).
+	 * If the Player is not in a game, this may be the Player's index in the
+	 * last game he played unless this Player's endGame() method has been
+	 * called.
 	 */
 	public int getIndex() {
 		return index;
@@ -201,6 +224,7 @@ public class Player {
 	/**
 	 * Returns a user-friendly String for identifying this Player.
 	 */
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder("Player \"");
 		sb.append(identifier);
@@ -214,46 +238,24 @@ public class Player {
 	}
 	
 	/**
-	 * Handles sending the specified accusation message to the connected AI and
-	 * the AI's response.
-	 * @param playerIndex
-	 * The index of the Player that made the accusation.
-	 * @param accusation
-	 * The accusation that that Player made.
-	 * @param correct
-	 * Whether the accusation was correct.
-	 * @throws IOException
-	 * @throws ProtocolViolation
-	 */
-	public void accusation(
-		int playerIndex,
-		Suggestion accusation,
-		boolean correct
-	) throws IOException, ProtocolViolation {
-		sendMessage(
-			String.format(
-				"accusation %d %s %c",
-				playerIndex,
-				accusation.getAbbreviation(),
-				(correct ? '+' : '-')
-			)
-		);
-		
-		String response = getResponse();
-		if (!response.equalsIgnoreCase("ok")) {
-			throw new ProtocolViolation(this, "accusation", response);
-		}
-	}
-	
-	/**
 	 * Asks the connected AI whether it wants to make an accusation. 
 	 * @return
 	 * Returns a Suggestion representing the AI's chosen accusation, or null if
 	 * the AI chose not to make an accusation.
 	 * @throws IOException
 	 * @throws ProtocolViolation
+	 * @throws TimeoutViolation 
+	 * @throws SuicidalAccusation 
+	 * @throws MissedAccusation 
 	 */
-	public Suggestion accuse() throws IOException, ProtocolViolation {
+	public Suggestion accuse()
+	throws
+		IOException,
+		ProtocolViolation,
+		TimeoutViolation,
+		SuicidalAccusation,
+		MissedAccusation
+	{
 		Suggestion accusation = null;
 		sendMessage("accuse");
 		String response = getResponse();
@@ -270,6 +272,12 @@ public class Player {
 			} catch (InvalidSuggestionString e) {
 				throw new ProtocolViolation(this, "accuse", response);
 			}
+			
+			if (suggestionHasSeenCards(accusation)) {
+				throw new SuicidalAccusation(this, accusation, seen);
+			}
+		} else if (mustAccuse) {
+			throw new MissedAccusation(this);
 		}
 		
 		return accusation;
@@ -282,9 +290,15 @@ public class Player {
 	 * @throws IOException
 	 * @throws ProtocolViolation
 	 * @throws DuplicateSuggestion
+	 * @throws TimeoutViolation 
 	 */
 	public Suggestion suggest()
-	throws IOException, ProtocolViolation, DuplicateSuggestion {
+	throws
+		IOException,
+		ProtocolViolation,
+		DuplicateSuggestion,
+		TimeoutViolation
+	{
 		sendMessage("suggest");
 		String response = getResponse();
 		if (
@@ -311,11 +325,52 @@ public class Player {
 	}
 	
 	/**
+	 * Handles sending the specified accusation message to the connected AI and
+	 * the AI's response.
+	 * @param playerIndex
+	 * The index of the Player that made the accusation.
+	 * @param accusation
+	 * The accusation that that Player made.
+	 * @param correct
+	 * Whether the accusation was correct.
+	 * @throws IOException
+	 * @throws ProtocolViolation
+	 * @throws TimeoutViolation 
+	 */
+	public void accusation(
+		int playerIndex,
+		Suggestion accusation,
+		boolean correct
+	) throws IOException, ProtocolViolation, TimeoutViolation {
+		sendMessage(
+			String.format(
+				"accusation %d %s %c",
+				playerIndex,
+				accusation.getAbbreviation(),
+				(correct ? '+' : '-')
+			)
+		);
+		
+		String response = getResponse();
+		if (!response.equalsIgnoreCase("ok")) {
+			throw new ProtocolViolation(this, "accusation", response);
+		}
+	}
+	
+	/**
+	 * Flags this Player as having been disqualified.
+	 */
+	public void disqualify(ClueException reason) {
+		violation = reason;
+	}
+	
+	/**
 	 * Handles sending the command to stop to the connected AI and its response.
 	 * @throws IOException
 	 * @throws ProtocolViolation
+	 * @throws TimeoutViolation 
 	 */
-	public void done() throws IOException, ProtocolViolation {
+	public void done() throws IOException, ProtocolViolation, TimeoutViolation {
 		try {
 			sendMessage("done");
 			String response = getResponse();
@@ -325,6 +380,13 @@ public class Player {
 		} finally {
 			socket.close();
 		}
+	}
+	
+	/**
+	 * Flags the Player as not being in a game.
+	 */
+	public void endGame() {
+		this.index = -1;
 	}
 	
 	/**
@@ -344,28 +406,29 @@ public class Player {
 	 * The Cards in this Player's hand.
 	 * @throws IOException
 	 * @throws ProtocolViolation
+	 * @throws TimeoutViolation 
 	 */
 	public void reset(
 		int playerCount,
 		int playerIndex,
-		Collection<Card> hand
-	) throws IOException, ProtocolViolation {
+		Hand hand
+	) throws IOException, ProtocolViolation, TimeoutViolation {
 		eliminated = false;
 		index = playerIndex;
+		mustAccuse = false;
+		seen = new HashSet<>(hand.getCards());
 		suggestions.clear();
-		this.hand.clear();
-		this.hand.addAll(hand);
+		this.hand = hand;
 		
-		StringBuilder message = new StringBuilder("reset ");
-		message.append(playerCount);
-		message.append(" ");
-		message.append(playerIndex);
-		for (Card c : hand) {
-			message.append(" ");
-			message.append(c.getAbbreviation());
-		}
 		
-		sendMessage(message.toString());
+		String message = String.format(
+			"reset %d %d %s",
+				playerCount,
+				playerIndex,
+				hand.getAbbreviation()
+		);
+		
+		sendMessage(message);
 		String response = getResponse();
 		if (!response.equalsIgnoreCase("ok")) {
 			throw new ProtocolViolation(this, "reset", response);
@@ -382,17 +445,18 @@ public class Player {
 	 * @param disproverIndex
 	 * The index of the Player that disproved the Suggestion.
 	 * @param card
-	 * The Card that was shown to the suggesting Player.  This should be null if
-	 * this Player is neither the suggester nor the disprover.
+	 * The Card that was shown to the suggesting Player.  This will be ignored
+	 * if this Player is neither the suggester nor the disprover.
 	 * @throws IOException
 	 * @throws ProtocolViolation
+	 * @throws TimeoutViolation 
 	 */
 	public void suggestion(
 		int playerIndex,
 		Suggestion suggestion,
 		Integer disproverIndex,
 		Card card
-	) throws IOException, ProtocolViolation {
+	) throws IOException, ProtocolViolation, TimeoutViolation {
 		StringBuilder message = new StringBuilder(
 			String.format(
 				"suggestion %d %s ",
@@ -404,9 +468,16 @@ public class Player {
 			message.append(disproverIndex);
 			if (index == playerIndex || index == disproverIndex.intValue()) {
 				message.append(String.format(" %s", card.getAbbreviation()));
+				
+				if (index == playerIndex) {
+					seen.add(card);
+				}
 			}
 		} else {
 			message.append("-");
+			if (index == playerIndex && !suggestionHasSeenCards(suggestion)) {
+				mustAccuse = true;
+			}
 		}
 		sendMessage(message.toString());
 		
@@ -418,45 +489,51 @@ public class Player {
 	
 	//******************* Protected and Private Interface ********************//
 	/**
+	 * Determines whether this Player has seen any of the Cards in the passed
+	 * Suggestion.
+	 * @param suggestion
+	 * The Suggestion in question.
+	 * @return
+	 * true if this Player has seen any of the Cards in the passed Suggestion,
+	 * false otherwise.
+	 */
+	private boolean suggestionHasSeenCards(Suggestion suggestion) {
+		return (
+			seen.contains(suggestion.getSuspect()) ||
+			seen.contains(suggestion.getWeapon()) ||
+			seen.contains(suggestion.getRoom())
+		);
+	}
+	
+	/**
 	 * Returns the Cards common to this Player's hand and the Suggestion.
 	 * @param suggestion
 	 * The Suggestion in question.
 	 * @return
-	 * A List of Cards.
+	 * A Collection of Cards.
 	 */
-	private List<Card> getDisproveCards(Suggestion suggestion) {
-		List<Card> cards = suggestion.getCards();
-		cards.retainAll(hand);
-		return cards;
+	private Collection<Card> getDisproveCards(Suggestion suggestion) {
+		return hand.getDisproveCards(suggestion);
 	}
 	
 	/**
-	 * Waits for and cleans up the connected AI's response to a message. 
+	 * Retrieves a message from the connected AI.
 	 * @return
 	 * The AI's response.
 	 * @throws IOException
+	 * @throws TimeoutViolation 
 	 */
-	private String getResponse() throws IOException {
-		/*
-		if (programOutput != null) {
-			while (!in.ready()) {
-				while (programOutput.ready()) {
-					System.out.format(
-						"{CLIENT} %s\n",
-						programOutput.readLine()
-					);
-				}
-			}
-		}
-		//*/
+	private String getResponse() throws IOException, TimeoutViolation {
+		int read;
 		
-		int read = in.read(buffer);
-		while (read > 0 && buffer[read - 1] == '\0') {
-			--read;
+		try {
+			read = in.read(buffer);
+		} catch (SocketTimeoutException ste) {
+			throw new TimeoutViolation(this);
 		}
-		
+
+		for (; read > 0 && buffer[read - 1] == '\0'; --read) {}
 		String response = (read > 0 ? String.copyValueOf(buffer, 0, read) : "");
-		System.out.format("    %s :>> \"%s\"\n", this, response);
 		return response;
 	}
 	
@@ -467,7 +544,6 @@ public class Player {
 	 * @throws IOException
 	 */
 	private void sendMessage(String message) throws IOException {
-		System.out.format("    %s <<: \"%s\"\n", this, message);
 		out.format(message);
 	}
 }

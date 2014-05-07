@@ -1,6 +1,6 @@
 package com.sadakatsu.clue.exception;
 
-import com.sadakatsu.clue.server.Player;
+import com.sadakatsu.clue.contestserver.Player;
 
 /**
  * A ProtocolViolation means that a server/AI received a message that does not
@@ -9,14 +9,14 @@ import com.sadakatsu.clue.server.Player;
  * @author Joseph A. Craig
  */
 @SuppressWarnings("serial")
-public class ProtocolViolation extends Exception {
+public class ProtocolViolation extends ClueException {
 	/**
 	 * Instantiates a ProtocolViolation for an unintelligible message.
 	 * @param message
 	 * The message that was received.
 	 */
 	public ProtocolViolation(String message) {
-		super(String.format("Received an unknown message: \"%s\"", message));
+		super("Received an unknown message: \"%s\"", message);
 	}
 	
 	/**
@@ -29,11 +29,9 @@ public class ProtocolViolation extends Exception {
 	 */
 	public ProtocolViolation(String messageType, String message) {
 		super(
-			String.format(
-				"Received an invalid %s message: \"%s\"",
-				messageType,
-				message
-			)
+			"Received an invalid %s message: \"%s\"",
+			messageType,
+			message
 		);
 	}
 	
@@ -53,16 +51,11 @@ public class ProtocolViolation extends Exception {
 		String received
 	) {
 		super(
-			String.format(
-				"%s sent an invalid %s message: \"%s\"",
-				player,
-				messageType,
-				received
-			)
+			player,
+			"%s sent an invalid %s message: \"%s\"",
+			player,
+			messageType,
+			received
 		);
 	}
-	
-	
-	
-	
 }
