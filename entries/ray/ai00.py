@@ -171,7 +171,7 @@ class AI00(Player):
             sg.append(card.name)
         sg = tuple(sg)
 
-        if sg is None or sg not in self.avail_suggestions:
+        if sg not in self.avail_suggestions:
             sg = self.avail_suggestions.pop()
         else:
             self.avail_suggestions.remove(sg)
@@ -248,12 +248,11 @@ class AI00(Player):
         return max(cards, key=lambda c: len(c.disproved_to)).name
 
     def accusation(self, player_id, cards, is_win):
-        pass
-        # if not is_win:
-        #     player = self.players[player_id]
-        #     for name in cards:
-        #         player.may_have.discard(self.card_map[name])
-        #     player.update()
+        if not is_win:
+            player = self.players[player_id]
+            for card in self.get_cards_by_names(cards):
+                player.set_have_not_card(card)
+            player.update()
 
     def get_cards_by_names(self, names):
         return [self.card_map[name] for name in names]

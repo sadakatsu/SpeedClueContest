@@ -7,6 +7,7 @@ fi
 BUF=--buf
 python -m speedclue $BUF --port $PORT --count 100 \
     ../../core/randomAI.jar\
-    ./ai00.py\
+    ./ai01.py\
     ../peter_taylor/dist/InferencePlayer.jar\
+    # ./ai00.py\
     #
