@@ -139,7 +139,7 @@ class Suggestion:
 
 class AI01(Player):
     def prepare(self):
-        self.set_verbosity(1)
+        self.set_verbosity(0)
 
     def reset(self, player_count, player_id, card_names):
         self.log('reset', 'id=', player_id, card_names)

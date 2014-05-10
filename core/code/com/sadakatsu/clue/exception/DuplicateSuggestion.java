@@ -1,7 +1,7 @@
 package com.sadakatsu.clue.exception;
 
 import com.sadakatsu.clue.cards.Suggestion;
-import com.sadakatsu.clue.testserver.Player;
+import com.sadakatsu.clue.contestserver.Player;
 
 /**
  * An Exception that represents that a Player (server-side) or AI (client-side)
@@ -11,7 +11,7 @@ import com.sadakatsu.clue.testserver.Player;
  * @author Joseph A. Craig
  */
 @SuppressWarnings("serial")
-public class DuplicateSuggestion extends Exception {
+public class DuplicateSuggestion extends ClueException {
 	/**
 	 * Instantiates a DuplicateSuggestion that reports that an AI attempted to
 	 * make a Suggestion more than once.
@@ -19,7 +19,7 @@ public class DuplicateSuggestion extends Exception {
 	 * The Suggestion in question.
 	 */
 	public DuplicateSuggestion(Suggestion suggestion) {
-		super(String.format("Made the duplicate Suggestion %s.", suggestion));
+		super("Made the duplicate Suggestion %s.", suggestion);
 	}
 	
 	/**
@@ -32,11 +32,10 @@ public class DuplicateSuggestion extends Exception {
 	 */
 	public DuplicateSuggestion(Player player, Suggestion suggestion) {
 		super(
-			String.format(
-				"%s made the duplicate Suggestion %s.",
-				player,
-				suggestion
-			)
+			player,
+			"%s made the duplicate Suggestion %s.",
+			player,
+			suggestion
 		);
-	}	
+	}
 }
