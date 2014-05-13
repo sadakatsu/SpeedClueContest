@@ -27,5 +27,18 @@ namespace CluePaddle.tests
       l = m_ai.NonDisprovers(1, 2).ToList();
       Assert.AreEqual(0, l.Count);
     }
+
+    [Test]
+    public void UndisprovedSuggestionTest()
+    {
+      m_ai.Reset(4, 0,
+                 new List<Suspect> {Suspect.MrGreen, Suspect.MrsPeacock},
+                 new List<Weapon> {Weapon.LeadPipe, Weapon.Candlestick, Weapon.MonkeyWrench},
+                 new List<Room>());
+
+      var murderSet = new MurderSet(Suspect.ProfPlum, Weapon.Knife, Room.Lounge);
+      m_ai.Suggestion(0, murderSet, null, null);
+      Assert.AreEqual(murderSet, m_ai.Accuse());
+    }
   }
 }
