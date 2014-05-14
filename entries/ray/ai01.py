@@ -198,8 +198,7 @@ class AI01(Player):
                 updated = True
                 self.log('found new target', card, 'in', join)
 
-        self.dump()
-
+        # self.dump()
         return updated
 
     def check_solution(self, solution):
@@ -233,7 +232,7 @@ class AI01(Player):
         resolve_player(0, avail_cards)
         return count
 
-    def suggest(self):
+    def suggest1(self):
         choices = []
         for type in self.card_types:
             choices.append([])
@@ -255,6 +254,20 @@ class AI01(Player):
             self.fail_count += 1
             self.log('fail')
         self.suggest_count += 1
+        return sg
+
+    def suggest(self):
+        sg = []
+        for type in self.card_types:
+            card = min((card for card in type.cards if card.owner is None),
+                key=lambda card: len(card.possible_owners))
+            sg.append(card.name)
+        sg = tuple(sg)
+
+        if sg not in self.avail_suggestions:
+            sg = self.avail_suggestions.pop()
+        else:
+            self.avail_suggestions.remove(sg)
         return sg
 
     def suggestion(self, player_id, cards, disprove_player_id=None, card=None):
@@ -323,12 +336,15 @@ class AI01(Player):
     def accuse(self):
         if all(type.solution for type in self.card_types):
             return [type.solution.name for type in self.card_types]
-        most_possible = max(self.possible_solutions, key=self.possible_solutions.get)
-        total = sum(self.possible_solutions.values())
-        self.log('rate:', self.possible_solutions[most_possible] / total)
-        if self.possible_solutions[most_possible] > 0.7 * total:
-            self.log('guess', most_possible)
-            return [card.name for card in most_possible]
+        possible_solutions = self.possible_solutions
+        if len(possible_solutions) == 1:
+            return next(possible_solutions.values())
+        # most_possible = max(self.possible_solutions, key=self.possible_solutions.get)
+        # total = sum(self.possible_solutions.values())
+        # # self.log('rate:', self.possible_solutions[most_possible] / total)
+        # if self.possible_solutions[most_possible] > 0.7 * total:
+        #     self.log('guess', most_possible)
+        #     return [card.name for card in most_possible]
         return None
 
     def disprove(self, suggest_player_id, cards):
@@ -342,12 +358,12 @@ class AI01(Player):
 
     def accusation(self, player_id, cards, is_win):
         if not is_win:
-            self.possible_solutions.pop(tuple(self.get_cards_by_names(cards)), None)
-            # XXX: Dangerous
-            # player = self.players[player_id]
-            # for name in cards:
-            #     player.may_have.discard(self.card_map[name])
-            # player.update()
+            cards = tuple(self.get_cards_by_names(cards))
+            self.possible_solutions.pop(cards, None)
+            player = self.players[player_id]
+            for card in cards:
+                player.set_have_not_card(card)
+            player.update()
         else:
             self.log('fail rate:', self.fail_count / (1e-8 + self.suggest_count))
             self.log('fail count:', self.fail_count, 'suggest count:', self.suggest_count)
