@@ -17,6 +17,9 @@ namespace CluePaddle
     private Dictionary<int, List<Card>> m_alreadyShown;
     private static readonly Random Rnd = new Random();
     private Dictionary<MurderSet, int> m_usedSuggestions;
+    private HashSet<Enum> m_neverSuggest;
+    private int m_targetPlayer;
+    private MurderSet? m_accusation;
 
     public void Reset(int n, int i, IEnumerable<Suspect> suspects, IEnumerable<Weapon> weapons, IEnumerable<Room> rooms)
     {
@@ -36,6 +39,10 @@ namespace CluePaddle
       }
 
       m_usedSuggestions = new Dictionary<MurderSet, int>();
+      m_neverSuggest = new HashSet<Enum>();
+
+      m_targetPlayer = (m_i + 1)%m_n;
+      m_accusation = null;
     }
 
     public void Suggestion(int suggester, MurderSet suggestion, int? disprover, Card disproof)
@@ -61,7 +68,22 @@ namespace CluePaddle
         // We know who disproved it and what they showed.
         Debug.Assert(disprover != null, "disproof is not null but disprover is null");
         m_cardTracker.DoesHave((int)disprover, disproof.Value);
+
+        if (suggester != m_i)
+        {
+          m_neverSuggest.Add(disproof.Value);
+        }
       }
+
+//      if (disproof == null && suggester == m_i)
+//      {
+//        if (m_suspects.IndexOf(suggestion.Suspect) == -1
+//            && m_weapons.IndexOf(suggestion.Weapon) == -1
+//            && m_rooms.IndexOf(suggestion.Room) == -1)
+//        {
+//          m_accusation = suggestion;
+//        }
+//      }
     }
 
     public IEnumerable<int> NonDisprovers(int suggester, int? disprover)
@@ -86,6 +108,8 @@ namespace CluePaddle
 
     public MurderSet Suggest()
     {
+      m_cardTracker.ProcessInferences();
+      UpdateTargetPlayer();
       // todo: do this nicely?
       var maybes = m_cardTracker.Maybes;
       MurderSet randomSuggestion;
@@ -98,56 +122,71 @@ namespace CluePaddle
       return randomSuggestion;
     }
 
-    private static MurderSet GetRandomSuggestion(List<Enum> maybes)
+    private MurderSet GetRandomSuggestion(List<Enum> maybes)
     {
-      if (!maybes.Any())
-      {
-        return new MurderSet(
-          RandomEnum(Card.AllSuspects.ToList()),
-          RandomEnum(Card.AllWeapons.ToList()),
-          RandomEnum(Card.AllRooms.ToList())
-          );
-      }
-
       var maybe = RandomEnum(maybes);
 
       if (maybe is Suspect)
       {
         return new MurderSet(maybe,
-                             RandomEnum(Card.AllWeapons.ToList()),
-                             RandomEnum(Card.AllRooms.ToList())
+                             RandomEnum(Card.AllWeapons),
+                             RandomEnum(Card.AllRooms)
           );
       }
       if (maybe is Weapon)
       {
         return new MurderSet(
-          RandomEnum(Card.AllSuspects.ToList()),
+          RandomEnum(Card.AllSuspects),
           maybe,
-          RandomEnum(Card.AllRooms.ToList())
+          RandomEnum(Card.AllRooms)
           );
       }
       if (maybe is Room)
       {
         return new MurderSet(
-          RandomEnum(Card.AllSuspects.ToList()),
-          RandomEnum(Card.AllWeapons.ToList()),
+          RandomEnum(Card.AllSuspects),
+          RandomEnum(Card.AllWeapons),
           maybe
           );
       }
       throw new Exception("Got a value back which isn't anything.");
     }
 
-    private static T RandomEnum<T>(List<T> l)
+    private Enum RandomEnum<T>(IEnumerable<T> l)
     {
-      var n = l.Count();
+      var list = l.Cast<Enum>()
+                  .Where(x => !m_neverSuggest.Contains(x))
+                  .ToList();
+      var n = list.Count();
+      Debug.Assert(n > 0);
       var i = Rnd.Next(0, n);
-      return l[i];
+      return list[i];
     }
 
     public MurderSet? Accuse()
     {
+//      if (m_accusation != null)
+//      {
+//        return m_accusation;
+//      }
       m_cardTracker.ProcessInferences();
       return m_cardTracker.GetAccusation();
+    }
+
+    private void UpdateTargetPlayer()
+    {
+      if (m_targetPlayer != m_i)
+      {
+        var toIgnore = m_cardTracker.CheckForAllTargetCards(m_targetPlayer);
+        if (toIgnore != null)
+        {
+          m_targetPlayer = (m_targetPlayer + 1)%m_n;
+          foreach (var card in toIgnore)
+          {
+            m_neverSuggest.Add(card);
+          }
+        }
+      }
     }
 
     public Card Disprove(int player, MurderSet suggestion)

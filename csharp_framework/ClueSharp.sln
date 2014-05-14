@@ -5,13 +5,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClueSharp", "ClueSharp\Clue
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClueBot", "ClueBot\ClueBot.csproj", "{57B82776-C377-4D60-8DFE-A1DC7504774D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClueBat", "..\entries\ClueBat\ClueBat.csproj", "{0245875F-2693-4438-BF69-F3D032B2B4F2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClueBat", "..\entries\jwg\ClueBat\ClueBat.csproj", "{0245875F-2693-4438-BF69-F3D032B2B4F2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClueByFour", "..\entries\ClueByFour\ClueByFour.csproj", "{F7A79CF8-BF69-476F-A65E-5E293CBC046A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClueByFour", "..\entries\jwg\ClueByFour\ClueByFour.csproj", "{F7A79CF8-BF69-476F-A65E-5E293CBC046A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CluePaddle", "..\entries\CluePaddle\CluePaddle.csproj", "{B9167A88-F8F0-4F02-B62E-2E36D059E7FE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CluePaddle", "..\entries\jwg\CluePaddle\CluePaddle.csproj", "{B9167A88-F8F0-4F02-B62E-2E36D059E7FE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClueStick", "..\entries\ClueStick\ClueStick.csproj", "{0DBD7F19-160C-4989-8DDE-1A4F7BAC77A4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClueStick", "..\entries\jwg\ClueStick\ClueStick.csproj", "{0DBD7F19-160C-4989-8DDE-1A4F7BAC77A4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
