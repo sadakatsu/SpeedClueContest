@@ -1,4 +1,3 @@
-cmd /c START java -jar randomAI.jar {A} %% true
-java -jar randomAI.jar {B} %%
-java -jar randomAI.jar {C} %%
-java -jar randomAI.jar {D} %%
+java -jar ../entries/peter_taylor/dist/InferencePlayer.jar {IP} %%
+python34 ../entries/ray/ai01.py {00} %%
+java -jar ../entries/gamecoder/SpockAI/spockAI.jar {Spock} %% true

@@ -2,7 +2,7 @@ package com.sadakatsu.clue.exception;
 
 import com.sadakatsu.clue.cards.Card;
 import com.sadakatsu.clue.cards.Suggestion;
-import com.sadakatsu.clue.testserver.Player;
+import com.sadakatsu.clue.contestserver.Player;
 
 /**
  * The InvalidDisprove represents that a Player (server-side) or AI (client-
@@ -13,7 +13,7 @@ import com.sadakatsu.clue.testserver.Player;
  * @author Joseph A. Craig
  */
 @SuppressWarnings("serial")
-public class InvalidDisprove extends Exception {
+public class InvalidDisprove extends ClueException {
 	/**
 	 * Instantiates an InvalidDisprove for the passed Card and Suggestion.
 	 * @param card
@@ -23,14 +23,12 @@ public class InvalidDisprove extends Exception {
 	 */
 	public InvalidDisprove(Card card, Suggestion suggestion) {
 		super(
-			String.format(
-				"Tried to disprove %s with %s, %s.",
-				suggestion,
-				card, (
-					suggestion.has(card) ?
-						" which he does not have" :
-						" which was not suggested"
-				)
+			"Tried to disprove %s with %s, %s.",
+			suggestion,
+			card, (
+				suggestion.has(card) ?
+					" which he does not have" :
+					" which was not suggested"
 			)
 		);
 	}
@@ -47,15 +45,14 @@ public class InvalidDisprove extends Exception {
 	 */
 	public InvalidDisprove(Player player, Card card, Suggestion suggestion) {
 		super(
-			String.format(
-				"%s tried to disprove %s with %s, %s",
-				player,
-				suggestion,
-				card, (
-					suggestion.has(card) ?
-						" which he does not have" :
-						" which was not suggested"
-				)
+			player,
+			"%s tried to disprove %s with %s, %s",
+			player,
+			suggestion,
+			card, (
+				suggestion.has(card) ?
+					" which he does not have" :
+					" which was not suggested"
 			)
 		);
 	}

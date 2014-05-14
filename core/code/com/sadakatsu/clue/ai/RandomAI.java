@@ -141,7 +141,6 @@ public class RandomAI extends SpeedClueAI {
 				for (StackTraceElement ste : e.getStackTrace()) {
 					pw.format("  %s\n", ste.toString());
 				}
-				pw.close();
 			} catch (FileNotFoundException fne) {}
 		}
 	}

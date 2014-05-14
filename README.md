@@ -18,9 +18,9 @@ The highlights of this repository are as follow.
 + ./README.md : `this`;
 + ./core/ : My contributions to get contestants started.
  + ./core/code/ : The Java 7 code for the test server and random player.
- + ./core/randomPlayer.jar : An executable JAR that allows contestants to test
-their entries.  The syntax is `java -jar randomPlayer.jar agentLaunchFile`.
- + ./core/testServer.jar : An executable JAR to use as a straw man AI.  The test
+ + ./core/testServer.jar : An executable JAR that allows contestants to test
+their entries.  The syntax is `java -jar testServer.jar agentLaunchFile`.
+ + ./core/randomPlayer.jar : An executable JAR to use as a straw man AI.  The test
 server can run it using the syntax `java -jar randomPlayer.jar identifier
 serverPort`.
  + ./core/LICENSE : A copy of the MIT License that recursively covers all the

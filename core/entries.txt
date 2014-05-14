@@ -1,0 +1,6 @@
+java -jar randomAI.jar {gamecoder-RandomPlayer} %%
+java -jar ../entries/peter_taylor/dist/SimpleCluedoPlayer.jar {peter_taylor-SimpleCluedoPlayer} %%
+java -jar ../entries/peter_taylor/dist/InferencePlayer.jar {peter_taylor-InferencePlayer} %%
+python34 ../entries/ray/ai01.py {ray-01} %%
+../entries/jwg/CluePaddle/bin/Release/CluePaddle.exe {jwg-CluePaddle} %%
+java -jar ../entries/gamecoder/SpockAI/spockAI.jar {gamecoder-SpockAI} %%
