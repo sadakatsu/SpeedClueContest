@@ -208,7 +208,7 @@ class AI01(Player):
         players = self.players
         avail_cards = set(card for card in self.cards if card.possible_owners)
         avail_cards -= set(solution)
-        if len(avail_cards) >= 8:
+        if len(avail_cards) >= 10:
             return 1
         count = 0
 
@@ -360,10 +360,10 @@ class AI01(Player):
         if not is_win:
             cards = tuple(self.get_cards_by_names(cards))
             self.possible_solutions.pop(cards, None)
-            player = self.players[player_id]
-            for card in cards:
-                player.set_have_not_card(card)
-            player.update()
+            # player = self.players[player_id]
+            # for card in cards:
+            #     player.set_have_not_card(card)
+            # player.update()
         else:
             self.log('fail rate:', self.fail_count / (1e-8 + self.suggest_count))
             self.log('fail count:', self.fail_count, 'suggest count:', self.suggest_count)
